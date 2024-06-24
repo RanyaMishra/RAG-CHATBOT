@@ -1,0 +1,44 @@
+Create a RetrievalQA chain to answer questions: 
+
+A RetrievalQA chain chains a large language model with our retriever interface. You can also define the chain type as one of the four options: “stuff,” “map reduce,” “refine,” “map_rerank.”
+The default chain_type=”stuff” incorporates ALL text from the documents into the prompt. 
+The “map_reduce” type breaks texts into groups, poses the question to the LLM for each batch separately, and derives the ultimate answer based on the replies from each batch. 
+The “refine” type partitions texts into batches, presents the first batch to the LLM, and then submits the answer along with the second batch to the LLM. It progressively refines the answer by processing through all the batches. 
+The “map-rerank” type divides texts into batches, submits each one to the LLM, returns a score indicating how comprehensively it answers the question, and determines the final answer based on the highest-scoring replies from each batch.
+
+
+
+import os
+from langchain.chains import RetrievalQA
+from langchain.document_loaders import PyPDFLoader
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.llms import OpenAI
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.vectorstores import Chroma
+
+os.environ["OPENAI_API_KEY"] = "Type your OpenAI API key here"
+# load documents
+loader = PyPDFLoader("example.pdf")
+documents = loader.load()
+# split the documents into chunks
+text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+texts = text_splitter.split_documents(documents)
+# select which embeddings we want to use
+embeddings = OpenAIEmbeddings()
+# create the vectorestore to use as the index
+db = Chroma.from_documents(texts, embeddings)
+# expose this index in a retriever interface
+retriever = db.as_retriever(
+    search_type="similarity", search_kwargs={"k": 2}
+)
+# create a chain to answer questions
+qa = RetrievalQA.from_chain_type(
+    llm=OpenAI(),
+    chain_type="map_reduce",
+    retriever=retriever,
+    return_source_documents=True,
+    verbose=True,
+)
+
+
+
