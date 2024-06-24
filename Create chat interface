@@ -1,0 +1,28 @@
+We must create a function `respond` to define how the chatbot responds. This function takes the response from Step 2 and formats it into a Panel object `answers`. We also append the relevant source documents in this Panel object.  Then we can simply call the function in the pn.chat.ChatInterface `callback.` 
+async def respond(contents, user, chat_interface):
+    if not pdf_input.value:
+        chat_interface.send(
+            {"user": "System", "value": "Please first upload a PDF!"}, respond=False
+        )
+        return
+    elif chat_interface.active == 0:
+        chat_interface.active = 1
+        chat_interface.active_widget.placeholder = "Ask questions here!"
+        yield {"user": "OpenAI", "value": "Let's chat about the PDF!"}
+        return
+
+    qa = initialize_chain()
+    response = qa({"query": contents})
+    answers = pn.Column(response["result"])
+    answers.append(pn.layout.Divider())
+    for doc in response["source_documents"][::-1]:
+        answers.append(f"**Page {doc.metadata['page']}**:")
+        answers.append(f"```\n{doc.page_content}\n```")
+    yield {"user": "OpenAI", "value": answers}
+
+chat_interface = pn.chat.ChatInterface(
+    callback=respond, sizing_mode="stretch_width", widgets=[pdf_input, chat_input]
+)
+chat_interface.send(
+    {"user": "System", "value": "Please first upload a PDF and click send!"},
+    respond=False,
