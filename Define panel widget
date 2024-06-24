@@ -1,0 +1,25 @@
+Panel widgets are interactive components that allow you to upload files or select values for your application. 
+
+For our RAG application chatbot, we define four Panel widgets:
+
+pdf_input: To allow users to upload a PDF file.
+key_input: To input the OpenAI API key. 
+k_slider: To select the number of relevant text chunks. 
+Chain_selection: To select the chain type for retrieval. 
+
+
+import panel as pn 
+pn.extension()
+
+pdf_input = pn.widgets.FileInput(accept=".pdf", value="", height=50)
+key_input = pn.widgets.PasswordInput(
+    name="OpenAI Key",
+    placeholder="sk-...",
+)
+k_slider = pn.widgets.IntSlider(
+    name="Number of Relevant Chunks", start=1, end=5, step=1, value=2
+)
+chain_select = pn.widgets.RadioButtonGroup(
+    name="Chain Type", options=["stuff", "map_reduce", "refine", "map_rerank"]
+)
+chat_input = pn.widgets.TextInput(placeholder="First, upload a PDF!")
