@@ -1,0 +1,6 @@
+The final step is to combine the widget and the chat interface together in an application. Panel comes with multiple templates that allow us to quickly and easily create web apps with better aesthetics. Here we use the BootstrapTemplate to organize the widgets in the sidebar and display the chat interface in the center of the app.
+
+template = pn.template.BootstrapTemplate(
+    sidebar=[key_input, k_slider, chain_select], main=[chat_interface]
+)
+template.servable()
