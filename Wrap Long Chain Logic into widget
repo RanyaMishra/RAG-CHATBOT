@@ -1,0 +1,41 @@
+We define OpenAI API key with the key_input widget  
+We load the file in the pdf_input widget
+We replace search_kwargs={"k": 2} with search_kwargs={"k": k_slider.value} so that we can control how many relevant docs we’d like to retrieve
+We replace chain_type="map_reduce" with chain_type=chain_select.value to allow us to choose one of the four chain types. 
+
+def initialize_chain():
+    if key_input.value:
+        os.environ["OPENAI_API_KEY"] = key_input.value
+
+    selections = (pdf_input.value, k_slider.value, chain_select.value)
+    if selections in pn.state.cache:
+        return pn.state.cache[selections]
+
+    chat_input.placeholder = "Ask questions here!"
+
+    # load document
+    with tempfile.NamedTemporaryFile("wb", delete=False) as f:
+        f.write(pdf_input.value)
+    file_name = f.name
+    loader = PyPDFLoader(file_name)
+    documents = loader.load()
+    # split the documents into chunks
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+    texts = text_splitter.split_documents(documents)
+    # select which embeddings we want to use
+    embeddings = OpenAIEmbeddings()
+    # create the vectorestore to use as the index
+    db = Chroma.from_documents(texts, embeddings)
+    # expose this index in a retriever interface
+    retriever = db.as_retriever(
+        search_type="similarity", search_kwargs={"k": k_slider.value}
+    )
+    # create a chain to answer questions
+    qa = RetrievalQA.from_chain_type(
+        llm=OpenAI(),
+        chain_type=chain_select.value,
+        retriever=retriever,
+        return_source_documents=True,
+        verbose=True,
+    )
+    return qa
